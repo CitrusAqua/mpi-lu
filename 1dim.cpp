@@ -2,6 +2,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 
 using namespace MPI;
 using namespace std;
@@ -72,9 +73,9 @@ int main(int argc,char *argv[]) {
     float* sendbuf = new float[matsize * width];
     float* recvbuf = new float[matsize * width];
 
-    uint64_t head, tail, freq;
-    QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
-    QueryPerformanceCounter((LARGE_INTEGER *)&head);
+    struct timeval tpstart,tpend;
+    double timeuse;
+    gettimeofday(&tpstart,NULL);
 
     // Generate and distribute data among all nodes.
     if (rank == 0) {
@@ -149,9 +150,9 @@ int main(int argc,char *argv[]) {
             }
         }
 
-        QueryPerformanceCounter((LARGE_INTEGER *)&tail);
-        double time = (tail - head) * 1000.0 / freq;
-        cout << 'running time: ' << time << endl;
+        gettimeofday(&tpend,NULL);
+        timeuse = 1000000*(tpend.tv_sec-tpstart.tv_sec)+tpend.tv_usec-tpstart.tv_usec;
+        cout << 'running time: ' << timeuse << endl;
 
         delete_matrix(result, matsize);
     }
