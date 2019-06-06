@@ -91,7 +91,7 @@ int main(int argc,char *argv[]) {
     // Receive data from formar nodes and perform eliminations.
     if (rank != 0) {
         for (int r=0; r<rank; r++) {
-            MPI_Recv(recvbuf, matsize, MPI_FLOAT, rank-1, 0, MPI_COMM_WORLD, &s);
+            MPI_Recv(recvbuf, matsize * width, MPI_FLOAT, rank-1, 0, MPI_COMM_WORLD, &s);
             for (int w=0; w<width; w++) {
                 for (int ww=0; ww<width; ww++) {
                     for (int i=r*width+w+1; i<matsize; i++) {
@@ -131,7 +131,7 @@ int main(int argc,char *argv[]) {
             }
         }
         for (int r=1; r<size; r++) {
-            MPI_Recv(recvbuf, matsize, MPI_FLOAT, r, 0, MPI_COMM_WORLD, &s);
+            MPI_Recv(recvbuf, matsize * width, MPI_FLOAT, r, 0, MPI_COMM_WORLD, &s);
             for (int w=0; w<width; w++) {
                 for (int i=0; i<matsize; i++) {
                     result[r*width+w][i] = recvbuf[w*matsize+i];
