@@ -130,7 +130,7 @@ int main(int argc,char *argv[]) {
                 result[w][i] = ROW(w, i);
             }
         }
-        for (int r=1; r<size; e++) {
+        for (int r=1; r<size; r++) {
             MPI_Recv(recvbuf, matsize, MPI_FLOAT, r, 0, MPI_COMM_WORLD, &s);
             for (int w=0; w<width; w++) {
                 for (int i=0; i<matsize; i++) {
