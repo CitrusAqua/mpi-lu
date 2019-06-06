@@ -69,6 +69,7 @@ int main(int argc,char *argv[]) {
     int width = matsize / size;
 
     float* row = new float[matsize * width];
+    float* sendbuf = new float[matsize * width];
     float* recvbuf = new float[matsize * width];
 
     // Generate and distribute data among all nodes.
@@ -80,7 +81,12 @@ int main(int argc,char *argv[]) {
             }
         }
         for (int i=1; i<size; i++) {
-            MPI_Send(row, matsize * width, MPI_FLOAT, i, 0, MPI_COMM_WORLD);
+            for (int w=0; w<width; w++) {
+                for (int j=0; j<matsize; j++) {
+                    sendbuf[w*width+i] = mat[width*i+w][j];
+                }
+            }
+            MPI_Send(sendbuf, matsize * width, MPI_FLOAT, i, 0, MPI_COMM_WORLD);
         }
         delete_matrix(mat, matsize);
     }
