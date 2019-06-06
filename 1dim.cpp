@@ -72,6 +72,10 @@ int main(int argc,char *argv[]) {
     float* sendbuf = new float[matsize * width];
     float* recvbuf = new float[matsize * width];
 
+    uint64_t head, tail, freq;
+    QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
+    QueryPerformanceCounter((LARGE_INTEGER *)&head);
+
     // Generate and distribute data among all nodes.
     if (rank == 0) {
         float** mat = new_matrix(matsize);
@@ -144,6 +148,11 @@ int main(int argc,char *argv[]) {
                 }
             }
         }
+
+        QueryPerformanceCounter((LARGE_INTEGER *)&tail);
+        double time = (tail - head) * 1000.0 / freq;
+        cout << 'running time: ' << time << endl;
+
         delete_matrix(result, matsize);
     }
     else {
