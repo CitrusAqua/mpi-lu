@@ -1,9 +1,10 @@
 #include <iostream>
 #include <mpi.h>
-#include <pmmintrin.h>
+#include <x86intrin.h>
 #include <sys/time.h>
-#include <immintrin.h>
+
 using namespace std;
+
 
 float** construct_matrix(const int N)
 {
@@ -69,7 +70,7 @@ void Normal_LU(int n,float **A)
 
     }
 }
-int N=16;
+int N=1000;
 void row_node(int rank);
 void eliminate(float **block,float **rblock,int r_num1,int r_num2,int r_count,int id);
 int main(int argc, char ** argv)
@@ -98,8 +99,10 @@ void row_node(int rank)
         //创建矩阵
         float **A=construct_matrix(N);
         float **B=construct_matrix(N);
+        //display(N,A);
+        cout<<"********************"<<endl;
+        //display(N,B);
         make_same(A,B,N);
-        Normal_LU(N,B);
         gettimeofday(&start_time,NULL);
         //首先将分配给各个node
         int count=1;
@@ -177,11 +180,13 @@ void row_node(int rank)
 
 
         gettimeofday(&end_time,NULL);
+        unsigned long time_interval = 1000000*(end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
+        cout<<time_interval<<endl;
 
         Normal_LU(N,B);
-        display(N,A);
+        //display(N,A);
         cout<<"*********************************************************";
-        display(N,B);
+        //display(N,B);
 
         
     }
@@ -252,6 +257,7 @@ void row_node(int rank)
             }
 
             
+            
             for(int i=0; i<block_size; i++)
             {
                 for(int j=k+1; j<N; j++)
@@ -284,12 +290,12 @@ void row_node(int rank)
                 }
                 //然后对自己进行消去
             }
-            //        
-            //matrix_elimination(mpi_matrix, matrix_size, mpi_matrix[i], N, k, i+1);
+            //  
+    
             for(int true_i=i+1; true_i<block_size; true_i++)
             {
                 for(int j=k+1; j<N; j++)
-                    block[true_i][j] =block[true_i][j] - block[true_i][k]*block[true_i][j];
+                    block[true_i][j] =block[true_i][j] - block[true_i][k]*block[i][j];
                 block[true_i][k] = 0.0;
             }
 
