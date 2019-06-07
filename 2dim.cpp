@@ -144,7 +144,7 @@ int main(int argc,char *argv[]) {
                 }
 
                 MPI_Send(recvleft, blksize * blksize, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD);
-                MPI_Send(recvtop, blksize * blksize, MPI_FLOAT, rank + blk_rows, 0, MPI_COMM_WORLD);
+                MPI_Send(recvtop, blksize * blksize, MPI_FLOAT, rank + n_blks, 0, MPI_COMM_WORLD);
                 continue;
             }
         }
@@ -160,10 +160,10 @@ int main(int argc,char *argv[]) {
             }
         }
         if (rowidx > 0) {
-            MPI_Recv(recvtop, blksize * blksize, MPI_FLOAT, rank - blk_rows, 0, MPI_COMM_WORLD, &mpis);
+            MPI_Recv(recvtop, blksize * blksize, MPI_FLOAT, rank - n_blks, 0, MPI_COMM_WORLD, &mpis);
             cout << rank << " recvtop" << endl;
             if (rowidx < n_blks-1) {
-                MPI_Send(recvtop, blksize * blksize, MPI_FLOAT, rank + blk_rows, 0, MPI_COMM_WORLD); // Forward
+                MPI_Send(recvtop, blksize * blksize, MPI_FLOAT, rank + n_blks, 0, MPI_COMM_WORLD); // Forward
             }
         }
 
