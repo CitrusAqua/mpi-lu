@@ -44,21 +44,6 @@ void delete_matrix(float** mat, int _size) {
 
 #define ROW(x, y) row[x*matsize+y]
 
-void elim(float* row, int rank, int width, int matsize) {
-    for (int w = 0; w < width; w++) {
-		for (int i = rank * width + w + 1; i < matsize; i++) {
-			ROW(w, i) /= ROW(w, rank * width + w);
-		}
-		ROW(w, rank * width + w) = 1;
-		for (int ww = w + 1; ww < width; ww++) {
-			for (int i = rank * width + w + 1; i < matsize; i++) {
-				ROW(ww, i) -= ROW(w, i) * ROW(ww, rank * width + w);
-			}
-			ROW(ww, rank * width + w) = 0;
-		}
-    }
-}
-
 int main(int argc,char *argv[]) {
     int rank, size;
     MPI_Status s;
@@ -72,10 +57,6 @@ int main(int argc,char *argv[]) {
     float* row = new float[matsize * width];
     float* sendbuf = new float[matsize * width];
     float* recvbuf = new float[matsize * width];
-
-    struct timeval tpstart,tpend;
-    double timeuse;
-    gettimeofday(&tpstart,NULL);
 
     // Generate and distribute data among all nodes.
     if (rank == 0) {
@@ -92,17 +73,26 @@ int main(int argc,char *argv[]) {
                 }
             }
             MPI_Send(sendbuf, matsize * width, MPI_FLOAT, i, 0, MPI_COMM_WORLD);
+            cout << i << " Sent!" << endl;
         }
         delete_matrix(mat, matsize);
     }
     else {
         MPI_Recv(row, matsize * width, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &s);
+        cout << rank << " Received!" << endl;
     }
+
+
+    struct timeval tpstart, tpend;
+    double timeuse;
+    gettimeofday(&tpstart, NULL);
+
 
     // Receive data from formar nodes and perform eliminations.
     if (rank != 0) {
         for (int r=0; r<rank; r++) {
             MPI_Recv(recvbuf, matsize * width, MPI_FLOAT, rank-1, 0, MPI_COMM_WORLD, &s);
+            cout << rank << " data from formar nodes received!" << endl;
             for (int w=0; w<width; w++) {
                 for (int ww=0; ww<width; ww++) {
                     for (int i=r*width+w+1; i<matsize; i++) {
@@ -128,6 +118,8 @@ int main(int argc,char *argv[]) {
 		}
     }
 
+    cout << rank << " elim done!" << endl;
+
     // Elimination finished. Send data to latter nodes to perform elimination.
     if (rank < size-1) {
         MPI_Send(row, matsize * width, MPI_FLOAT, rank+1, 0, MPI_COMM_WORLD);
@@ -152,7 +144,7 @@ int main(int argc,char *argv[]) {
 
         gettimeofday(&tpend,NULL);
         timeuse = 1000000*(tpend.tv_sec-tpstart.tv_sec)+tpend.tv_usec-tpstart.tv_usec;
-        cout << 'running time: ' << timeuse << endl;
+        cout << "running time: " << timeuse << endl;
 
         delete_matrix(result, matsize);
     }
