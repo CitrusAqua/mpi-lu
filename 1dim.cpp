@@ -92,6 +92,9 @@ int main(int argc,char *argv[]) {
     if (rank != 0) {
         for (int r=0; r<rank; r++) {
             MPI_Recv(recvbuf, matsize * width, MPI_FLOAT, rank-1, 0, MPI_COMM_WORLD, &s);
+            if (rank < size-1) {
+                MPI_Send(recvbuf, matsize * width, MPI_FLOAT, rank+1, 0, MPI_COMM_WORLD); // Forward
+            }
             cout << rank << " data from formar nodes received!" << endl;
             for (int w=0; w<width; w++) {
                 for (int ww=0; ww<width; ww++) {
@@ -103,6 +106,8 @@ int main(int argc,char *argv[]) {
             }
         }
     }
+
+    cout << rank << " data collect done!" << endl;
 
     // Perform elimination on own data.
     for (int w = 0; w < width; w++) {
