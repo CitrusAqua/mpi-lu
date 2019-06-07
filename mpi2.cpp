@@ -106,7 +106,7 @@ void row_node(int rank)
         gettimeofday(&start_time,NULL);
         //首先将分配给各个node
         int count=1;
-        cout<<"yes0"<<endl;
+        //cout<<"yes0"<<endl;
         bool flag=false;
         for(int i = r_n; i<N; i=i+1)
         {
@@ -119,7 +119,7 @@ void row_node(int rank)
                 //cout<<"i is "<<i<<endl;
             }
             //cout<<count<<endl;
-            cout<<"id:"<<count<<endl;
+            //cout<<"id:"<<count<<endl;
             if(count==size-1)
             {
                 flag=true;//后面count不变都发给最后一个结点
@@ -127,7 +127,7 @@ void row_node(int rank)
             //然后将每一行发送出去 count为结点id
             MPI_Send(A[i],N,MPI_FLOAT,count,0,MPI_COMM_WORLD);
         }
-        cout<<"yes1"<<endl;
+        //cout<<"yes1"<<endl;
         //然后对第一行进行操作进行除法和消去再发送
         for(int k=0; k < r_n; k++)
         {
@@ -217,12 +217,13 @@ void row_node(int rank)
         for(int i=0; i<block_size; i++)
             block[i] = new float[N];
         //接收初始值
-        cout<<"yes3"<<endl;
+        //cout<<"yes3"<<endl;
         for(int i=0;i<block_size;i++)
         {
             MPI_Recv(block[i],N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         }
+        /*
         if(rank==7)
         {
             cout<<"rank7 yes "<<block_size<<endl;
@@ -251,10 +252,7 @@ void row_node(int rank)
             MPI_Recv(rrow, N, MPI_FLOAT, origin, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             //消去
             //cout<<origin<<endl;
-            if(rank==7)
-            {
-                cout<<"rank7:"<<origin<<"begin"<<begin<<endl;
-            }
+            
 
             
             
@@ -266,10 +264,11 @@ void row_node(int rank)
             }
 
         }
+        /*
         if(rank==7)
         {
             cout<<"rank7 yes1"<<endl;
-        }
+        }*/
         //cout<<"yes5"<<endl;
         //消除完对自己进行行除法和消除然后发出去
         for(int k=begin;k<=end;k++)
@@ -300,7 +299,7 @@ void row_node(int rank)
             }
 
         }
-        cout<<rank<<" yes6"<<endl;
+        //cout<<rank<<" yes6"<<endl;
         for(int i=0; i<block_size; i++)
         {
             MPI_Send(block[i], N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
