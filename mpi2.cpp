@@ -180,7 +180,7 @@ void row_node(int rank)
 
 
         gettimeofday(&end_time,NULL);
-        unsigned long time_interval = 1000000*(end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
+        unsigned long time_interval = 1000000*(end_time.tv_sec - start_time.tv_sec) + end_time.tv_usec - start_time.tv_usec;
         cout<<time_interval<<endl;
 
         Normal_LU(N,B);
