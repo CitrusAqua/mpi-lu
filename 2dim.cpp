@@ -63,7 +63,7 @@ void elim(float* blk, int rank, int blksize) {
 
 int main(int argc,char *argv[]) {
     int rank, size;
-    MPI_Status s;
+    MPI_Status mpis;
     MPI_Init(&argc,&argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -71,8 +71,8 @@ int main(int argc,char *argv[]) {
     int matsize = 512;
     int n_blks = sqrt(size);
     int blksize = matsize / n_blks;
-    int rowidx = rank/blk_rows;
-    int colidx = rank%blk_rows;
+    int rowidx = rank/n_blks;
+    int colidx = rank%n_blks;
 
     float* blk = new float[blksize * blksize];
     float* sendbuf = new float[blksize * blksize];
@@ -90,21 +90,21 @@ int main(int argc,char *argv[]) {
                 BLK(i, j) = mat[i][j];
             }
         }
-        for (int i=0; i<blk_rows; i++) {
-            for (int j=0; j<blk_rows; j++) {
+        for (int i=0; i<n_blks; i++) {
+            for (int j=0; j<n_blks; j++) {
                 if (i==0&&j==0) continue;
                 for (int ii=0; ii<blksize; ii++) {
                     for (int jj=0; jj<blksize; jj++) {
                         sendbuf[ii*blksize+jj] = mat[ii][jj];
                     }
                 }
-                MPI_Send(sendbuf, blksize * blksize, MPI_FLOAT, i*blk_rows+j, 0, MPI_COMM_WORLD);
+                MPI_Send(sendbuf, blksize * blksize, MPI_FLOAT, i*n_blks+j, 0, MPI_COMM_WORLD);
             }
         }
         delete_matrix(mat, matsize);
     }
     else {
-        MPI_Recv(blk, blksize * blksize, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &s);
+        MPI_Recv(blk, blksize * blksize, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &mpis);
     }
 
 
@@ -128,7 +128,7 @@ int main(int argc,char *argv[]) {
                 cout << rank << " head" << endl;
 
                 for (int k=0; k<blksize; ++k) {
-                    for (int j=0; j<blkszie; j++) {
+                    for (int j=0; j<blksize; j++) {
                         RCL(j, k) = BLK(j, k);
                     }
                     for (int j=k+1; j<blksize; ++j) {
@@ -153,14 +153,14 @@ int main(int argc,char *argv[]) {
         // Receive data from left or top & forward
         //==================================================
         if (colidx > 0) {
-            MPI_Recv(recvleft, blksize * blksize, MPI_FLOAT, rank - 1, 0, MPI_COMM_WORLD, &s);
+            MPI_Recv(recvleft, blksize * blksize, MPI_FLOAT, rank - 1, 0, MPI_COMM_WORLD, &mpis);
             cout << rank << " recvleft" << endl;
             if (colidx < n_blks-1) {
                 MPI_Send(recvleft, blksize * blksize, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD); // Forward
             }
         }
         if (rowidx > 0) {
-            MPI_Recv(recvtop, blksize * blksize, MPI_FLOAT, rank - blk_rows, 0, MPI_COMM_WORLD, &s);
+            MPI_Recv(recvtop, blksize * blksize, MPI_FLOAT, rank - blk_rows, 0, MPI_COMM_WORLD, &mpis);
             cout << rank << " recvtop" << endl;
             if (rowidx < n_blks-1) {
                 MPI_Send(recvtop, blksize * blksize, MPI_FLOAT, rank + blk_rows, 0, MPI_COMM_WORLD); // Forward
@@ -229,7 +229,7 @@ int main(int argc,char *argv[]) {
     }
 
 
-    delete[]row;
+    delete[]blk;
     MPI_Finalize();
     return 0;
 }
