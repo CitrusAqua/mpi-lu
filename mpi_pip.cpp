@@ -151,11 +151,76 @@ void row_node(int rank)
         gettimeofday(&start_time,NULL);
         
         //
+        //首先将分配给各个node
+        int count=1;
+        //cout<<"yes0"<<endl;
+        bool flag=false;
+        for(int i = r_n; i<N; i=i+1)
+        {
+            if((count+1)*r_n==i)
+            {
+                if(flag==false&&count!=size-1)
+                {
+                    count=count+1;
+                }
+                //cout<<"i is "<<i<<endl;
+            }
+            //cout<<count<<endl;
+            //cout<<"id:"<<count<<endl;
+            if(count==size-1)
+            {
+                flag=true;//后面count不变都发给最后一个结点
+            }
+            //然后将每一行发送出去 count为结点id
+            MPI_Send(A[i],N,MPI_FLOAT,count,0,MPI_COMM_WORLD);
+        }
+        // 先做除法操作，然后发送结果 ，再消去自己的。
+        for(int k=0; k < r_n; k++)
+        {
+            // division
+            for(int j=k+1; j<N; j++)
+                A[k][j] = A[k][j] / A[k][k];
+            A[k][k] = 1.0;
 
-        
-        
-       
 
+            // 将division结果发给下一个节点
+            int dest = rank + 1;
+            MPI_Send(A[k], N, MPI_FLOAT, dest, 0, MPI_COMM_WORLD);
+            
+            if((r_n-1-k)<=0)
+            {
+                break; //只有一行不需要消去
+            }
+            for(int i=k+1;i<r_n;i=i+1)
+            {
+
+                for(int j=k+1;j<N;j++)
+                {
+                    A[i][j]=A[i][j]-A[i][k]*A[k][j];
+                }
+                A[i][k]=0;
+            }
+            
+        }
+        //cout<<"yes2"<<endl;
+        //然后接收传回来的行
+        int count1=1;
+        flag=false;
+        for(int i=r_n; i<N; i++)
+        {
+            if((count1+1)*r_n==i)
+            {
+                if(flag==false&&count1!=size-1)
+                {
+                    count1=count1+1;
+                }
+            }
+            if(count1==size-1)
+            {
+                flag=true;
+            }                    
+            MPI_Recv(A[i], N, MPI_FLOAT, count1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        } 
 
         gettimeofday(&end_time,NULL);
         unsigned long time_interval = 1000000*(end_time.tv_sec - start_time.tv_sec) + end_time.tv_usec - start_time.tv_usec;
@@ -172,111 +237,104 @@ void row_node(int rank)
     }
     else
     {
-
-        //先接收数据从 0
-        
+        int size;  // 线程总数
+        MPI_Comm_size(MPI_COMM_WORLD,&size);
+        int r_n=(N-N%size)/size;  
+        int r_n=(N-N%size)/size;
+        int begin=rank*r_n;
+        int end=0;
+        if(rank==size-1)
+        {
+            end=N-1;
+        }
+        else
+        {
+            end=begin+r_n-1;
+        }
+        // 创建空间存放要负责行
+        int block_size = end - begin + 1;
+        float **block = new float*[block_size];
+        for(int i=0; i<block_size; i++)
+            block[i] = new float[N];
+        //接收初始值
+        //cout<<"yes3"<<endl;
         for(int i=0;i<block_size;i++)
         {
-            MPI_Recv(block[i],N,MPI_FLOAT,0,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-        }
-
-        //cout<<rank<<" yes!"<<endl;
-        int my_i=0; //看我自己除法做到哪一行了 注意这里是block里面的位置 不是全局位置
-        for(int k=0;k<N;k++)
+            MPI_Recv(block[i],N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
+        }    
+        float *rrow=new float[N];
+        //接收数据
+        for(int k=0; k<begin; k++)  
         {
-            /*
-            if(rank==2)
-            {
-                cout<<"rank2:"<<k<<endl;
-            }*/
-            int remaining=N-k; //最后有些不能发
-            int id=k%size;
+            //找到第k行是哪一个结点发送
+            //cout<<k<<endl;
+            int origin = k/r_n;
+            //cout<<origin<<endl;
+            MPI_Recv(rrow, N, MPI_FLOAT, origin, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            //消去
+            //cout<<origin<<endl;
+            
 
-            if(id==rank) //该我进行除法
+            
+            
+            for(int i=0; i<block_size; i++)
             {
                 for(int j=k+1; j<N; j++)
-                    block[my_i][j] = block[my_i][j] / block[my_i][k];
-                block[my_i][k] = 1.0;
-                //然后进行发送
-                if(remaining>=size)
-                {
-                    for(int node=0;node<size;node++)
-                    {
-                        
-                        if(node!=rank)//简单来说是自己就不发
-                        {
-                            MPI_Send(block[my_i],N,MPI_FLOAT,node,0,MPI_COMM_WORLD);
-                        }
-                    }
-                }
-                else{
-                    for(int node=0;node<remaining;node++)
-                    {
-                        
-                        int dest=(node+rank)%size;
-
-                        if(dest!=rank)//简单来说是自己就不发
-                        {
-                            MPI_Send(block[my_i],N,MPI_FLOAT,dest,0,MPI_COMM_WORLD);
-                        }
-                    }
-                }
-                //对自己进行消去
-                for(int i=my_i+1;i<block_size;i=i+1)
-                {
-
-                    for(int j=k+1;j<N;j++)
-                    {
-                        block[i][j]=block[i][j]-block[i][k]*block[my_i][j];
-                    }
-                    block[i][k]=0;
-                }
-                my_i=my_i+1;
-                if(my_i==block_size)
-                {
-                    //已经做完了
-                    break;
-                }
-            }
-            else
-            {
-                
-
-                //这里是不该我进行除法的情况
-                //阻塞接收 接收别人发来的 再操作
-                MPI_Recv(rrow,N,MPI_FLOAT,id,0,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                //收到过后进行消去
-
-                for(int i=my_i;i<block_size;i=i+1)
-                {
-
-                    for(int j=k+1;j<N;j++)
-                    {
-                        block[i][j]=block[i][j]-block[i][k]*rrow[j];
-                    }
-                    block[i][k]=0;
-                }
-
-
+                    block[i][j] = block[i][j] - block[i][k]*rrow[j];
+                block[i][k] = 0.0;
             }
 
         }
-        //cout<<rank<<"rank"<<"finish"<<endl;
-        //最后发送到0结点
 
-        for(int i = 0; i<block_size; i++)
+        //消除完对自己进行行除法和消除然后发出去
+        for(int k=begin;k<=end;k++)
+        {
+                // division
+            int i = k - begin;
+            for(int j=k+1; j<N; j++)
+                block[i][j] = block[i][j] / block[i][k];
+            block[i][k] = 1.0;
+
+            // 跟前面一样进行发出 给后面的结点
+            if(rank!=size-1)
+            {
+                for(int id=rank+1;id<size;id++)
+                {
+                    MPI_Send(block[i], N, MPI_FLOAT, id, 0, MPI_COMM_WORLD);    
+                    
+                }
+                //然后对自己进行消去
+            }
+            //  
+    
+            for(int true_i=i+1; true_i<block_size; true_i++)
+            {
+                for(int j=k+1; j<N; j++)
+                    block[true_i][j] =block[true_i][j] - block[true_i][k]*block[i][j];
+                block[true_i][k] = 0.0;
+            }
+
+        }
+        //cout<<rank<<" yes6"<<endl;
+        for(int i=0; i<block_size; i++)
         {
             MPI_Send(block[i], N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
-        }        
+        }
 
 
 
+    
 
-
+    }
 
         
 
+
+
     
+
+}
+     
 
     }
 
