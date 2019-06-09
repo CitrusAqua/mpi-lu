@@ -240,7 +240,6 @@ void row_node(int rank)
         int size;  // 线程总数
         MPI_Comm_size(MPI_COMM_WORLD,&size);
         int r_n=(N-N%size)/size;  
-        int r_n=(N-N%size)/size;
         int begin=rank*r_n;
         int end=0;
         if(rank==size-1)
@@ -336,7 +335,7 @@ void row_node(int rank)
 }
      
 
-    }
+ 
 
         
 
@@ -344,4 +343,3 @@ void row_node(int rank)
 
     
 
-}
