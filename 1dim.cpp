@@ -159,6 +159,8 @@ int main(int argc,char *argv[]) {
 
 
     delete[]row;
+    delete[]sendbuf;
+    delete[]recvbuf
     MPI_Finalize();
     return 0;
 }
